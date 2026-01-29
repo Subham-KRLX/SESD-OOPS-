@@ -8,10 +8,10 @@ export class ProductController {
     getAll = async (req: Request, res: Response, next: NextFunction) => {
         try {
             const options: ProductQueryOptions = {
-                search: req.query.search as string,
-                category: req.query.category as string,
-                sortBy: req.query.sortBy as string,
-                sortOrder: req.query.sortOrder as 'asc' | 'desc',
+                search: (req.query.search as string) || undefined,
+                category: (req.query.category as string) || undefined,
+                sortBy: (req.query.sortBy as string) || undefined,
+                sortOrder: (req.query.sortOrder as string) as 'asc' | 'desc' || 'desc',
                 page: req.query.page ? parseInt(req.query.page as string) : 1,
                 limit: req.query.limit ? parseInt(req.query.limit as string) : 10
             };
