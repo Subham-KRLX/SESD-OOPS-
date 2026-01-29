@@ -18,6 +18,7 @@ class App {
 
     private initializeMiddlewares() {
         this.app.use(express.json());
+        this.app.use(express.static('public'));
     }
 
     private initializeRoutes() {
