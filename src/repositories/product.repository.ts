@@ -1,7 +1,49 @@
+import * as fs from 'fs/promises';
+import * as path from 'path';
 import { Product, CreateProductDto, UpdateProductDto, ProductQueryOptions } from '../models/product.model';
 
 export class ProductRepository {
     private products: Product[] = [];
+    private filePath = path.join(process.cwd(), 'data', 'products.json');
+
+    constructor() {
+        this.initializeData();
+    }
+
+    private async initializeData() {
+        try {
+            await fs.mkdir(path.dirname(this.filePath), { recursive: true });
+            const data = await fs.readFile(this.filePath, 'utf-8');
+            this.products = JSON.parse(data);
+        } catch (error) {
+            // If file doesn't exist, seed with initial data
+            this.products = [
+                {
+                    id: 'seed-1',
+                    name: 'Premium Headphones',
+                    description: 'Noise-cancelling over-ear headphones with high-fidelity sound.',
+                    price: 299.99,
+                    category: 'Electronics',
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                },
+                {
+                    id: 'seed-2',
+                    name: 'Leather Weekend Bag',
+                    description: 'Handcrafted genuine leather bag for your short journeys.',
+                    price: 150.00,
+                    category: 'Accessories',
+                    createdAt: new Date(),
+                    updatedAt: new Date()
+                }
+            ];
+            await this.saveToFile();
+        }
+    }
+
+    private async saveToFile() {
+        await fs.writeFile(this.filePath, JSON.stringify(this.products, null, 2));
+    }
 
     async findAll(options: ProductQueryOptions): Promise<{ data: Product[]; total: number }> {
         let result = [...this.products];
@@ -54,6 +96,7 @@ export class ProductRepository {
             updatedAt: new Date()
         };
         this.products.push(newProduct);
+        await this.saveToFile();
         return newProduct;
     }
 
@@ -66,6 +109,7 @@ export class ProductRepository {
             ...data,
             updatedAt: new Date()
         };
+        await this.saveToFile();
         return this.products[index];
     }
 
@@ -74,6 +118,7 @@ export class ProductRepository {
         if (index === -1) return false;
 
         this.products.splice(index, 1);
+        await this.saveToFile();
         return true;
     }
 }
