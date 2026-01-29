@@ -1,19 +1,48 @@
-import express  from "express";
-import TodoRoutes from "./routes/todo.routes";
+import express from "express";
+import { ProductRepository } from "./repositories/product.repository";
+import { ProductService } from "./services/product.service";
+import { ProductController } from "./controllers/product.controller";
+import { ProductRoutes } from "./routes/product.routes";
+import { ErrorMiddleware } from "./middleware/error.middleware";
 
 class App {
-    app:express.Application
-    port:number | string = 3000
-    constructor(){
-        this.app=express();
-        this.app.use(express.json());
-        // this.initializeRoutes();
+    public app: express.Application;
+    public port: number | string = 3000;
+
+    constructor() {
+        this.app = express();
+        this.initializeMiddlewares();
+        this.initializeRoutes();
+        this.initializeErrorHandling();
     }
-    start(){
+
+    private initializeMiddlewares() {
+        this.app.use(express.json());
+    }
+
+    private initializeRoutes() {
+        // Dependency Injection
+        const productRepository = new ProductRepository();
+        const productService = new ProductService(productRepository);
+        const productController = new ProductController(productService);
+        const productRoutes = new ProductRoutes(productController);
+
+        this.app.get('/', (req, res) => {
+            res.json({ message: 'Welcome to Product CRUD API' });
+        });
+
+        this.app.use('/api/products', productRoutes.router);
+    }
+
+    private initializeErrorHandling() {
+        this.app.use(ErrorMiddleware);
+    }
+
+    public start() {
         this.app.listen(this.port, () => {
             console.log(`App started on http://localhost:${this.port}`);
-        })
+        });
     }
 }
-export default App
+export default App;
 
