@@ -22,7 +22,6 @@ class App {
     }
 
     private initializeRoutes() {
-        // Dependency Injection
         const productRepository = new ProductRepository();
         const productService = new ProductService(productRepository);
         const productController = new ProductController(productService);

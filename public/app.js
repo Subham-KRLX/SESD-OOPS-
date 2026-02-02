@@ -3,65 +3,80 @@ const AUTH_TOKEN = 'Bearer secure-token';
 
 let products = [];
 
-// Fetch and display products
 async function fetchProducts() {
-    const search = document.getElementById('searchInput').value;
-    const category = document.getElementById('categoryFilter').value;
-    const sortVal = document.getElementById('sortSelect').value;
-    const [sortBy, sortOrder] = sortVal.split('-');
+    let search = document.getElementById('searchInput').value;
+    let category = document.getElementById('categoryFilter').value;
+    let sortVal = document.getElementById('sortSelect').value;
 
-    const queryParams = new URLSearchParams({
-        search,
-        category,
-        sortBy,
-        sortOrder
-    });
+    let splitSort = sortVal.split('-');
+    let sortBy = splitSort[0];
+    let sortOrder = splitSort[1];
+
+    let queryString = 'search=' + search + '&category=' + category + '&sortBy=' + sortBy + '&sortOrder=' + sortOrder;
 
     try {
-        const response = await fetch(`${API_URL}?${queryParams}`);
+        const response = await fetch(API_URL + '?' + queryString);
         const result = await response.json();
+
         if (result.status === 'success') {
             products = result.data;
             renderProducts();
         }
     } catch (error) {
+        console.error(error);
         showToast('Error fetching products', 'error');
     }
 }
 
 function renderProducts() {
     const grid = document.getElementById('productGrid');
-    grid.innerHTML = products.map(p => `
-        <div class="product-card">
-            <span class="category">${p.category}</span>
-            <h3>${p.name}</h3>
-            <p style="color:var(--text-muted); font-size:0.875rem">${p.description}</p>
-            <div class="price">$${p.price.toFixed(2)}</div>
-            <div class="card-actions">
-                <button class="btn btn-sm" style="background:var(--border)" onclick="editProduct('${p.id}')">Edit</button>
-                <button class="btn btn-sm" style="background:var(--danger); color:white" onclick="deleteProduct('${p.id}')">Delete</button>
-            </div>
-        </div>
-    `).join('');
+    grid.innerHTML = '';
+
+    for (let i = 0; i < products.length; i++) {
+        let p = products[i];
+
+        let html = '<div class="product-card">';
+        html += '<span class="category">' + p.category + '</span>';
+        html += '<h3>' + p.name + '</h3>';
+        html += '<p style="color:var(--text-muted); font-size:0.875rem">' + p.description + '</p>';
+        html += '<div class="price">$' + p.price.toFixed(2) + '</div>';
+        html += '<div class="card-actions">';
+        html += '<button class="btn btn-sm" style="background:var(--border)" onclick="editProduct(\'' + p.id + '\')">Edit</button>';
+        html += '<button class="btn btn-sm" style="background:var(--danger); color:white" onclick="deleteProduct(\'' + p.id + '\')">Delete</button>';
+        html += '</div>';
+        html += '</div>';
+
+        grid.innerHTML += html;
+    }
 }
 
-// Handle Form Submission
 document.getElementById('productForm').addEventListener('submit', async (e) => {
     e.preventDefault();
-    const id = document.getElementById('productId').value;
-    const data = {
-        name: document.getElementById('name').value,
-        category: document.getElementById('category').value,
-        price: parseFloat(document.getElementById('price').value),
-        description: document.getElementById('description').value
+
+    let id = document.getElementById('productId').value;
+    let name = document.getElementById('name').value;
+    let cat = document.getElementById('category').value;
+    let price = document.getElementById('price').value;
+    let desc = document.getElementById('description').value;
+
+    let data = {
+        name: name,
+        category: cat,
+        price: parseFloat(price),
+        description: desc
     };
 
-    const method = id ? 'PUT' : 'POST';
-    const url = id ? `${API_URL}/${id}` : API_URL;
+    let method = 'POST';
+    let url = API_URL;
+
+    if (id) {
+        method = 'PUT';
+        url = API_URL + '/' + id;
+    }
 
     try {
         const response = await fetch(url, {
-            method,
+            method: method,
             headers: {
                 'Content-Type': 'application/json',
                 'Authorization': AUTH_TOKEN
@@ -70,7 +85,11 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
         });
 
         if (response.ok) {
-            showToast(id ? 'Product updated' : 'Product added');
+            if (id) {
+                showToast('Product updated');
+            } else {
+                showToast('Product added');
+            }
             closeModal();
             fetchProducts();
         } else {
@@ -78,15 +97,17 @@ document.getElementById('productForm').addEventListener('submit', async (e) => {
             showToast(err.message, 'error');
         }
     } catch (error) {
+        console.log(error);
         showToast('Error saving product', 'error');
     }
 });
 
 async function deleteProduct(id) {
-    if (!confirm('Are you sure you want to delete this product?')) return;
+    let confirmDelete = confirm('Are you sure you want to delete this product?');
+    if (!confirmDelete) return;
 
     try {
-        const response = await fetch(`${API_URL}/${id}`, {
+        const response = await fetch(API_URL + '/' + id, {
             method: 'DELETE',
             headers: { 'Authorization': AUTH_TOKEN }
         });
@@ -101,7 +122,14 @@ async function deleteProduct(id) {
 }
 
 function editProduct(id) {
-    const p = products.find(prod => prod.id === id);
+    let p = null;
+    for (let i = 0; i < products.length; i++) {
+        if (products[i].id === id) {
+            p = products[i];
+            break;
+        }
+    }
+
     if (!p) return;
 
     document.getElementById('modalTitle').innerText = 'Edit Product';
@@ -129,15 +157,23 @@ function handleSearch() {
     fetchProducts();
 }
 
-function showToast(message, type = 'success') {
+function showToast(message, type) {
+    if (!type) type = 'success';
+
     const toast = document.getElementById('toast');
     toast.innerText = message;
-    toast.style.borderLeftColor = type === 'success' ? 'var(--accent)' : 'var(--danger)';
+
+    if (type === 'success') {
+        toast.style.borderLeftColor = 'var(--accent)';
+    } else {
+        toast.style.borderLeftColor = 'var(--danger)';
+    }
+
     toast.style.transform = 'translateX(0)';
-    setTimeout(() => {
+
+    setTimeout(function () {
         toast.style.transform = 'translateX(200%)';
     }, 3000);
 }
 
-// Initial fetch
 fetchProducts();
