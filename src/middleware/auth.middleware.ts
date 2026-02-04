@@ -8,6 +8,5 @@ export const AuthMiddleware = (req: Request, res: Response, next: NextFunction) 
     if (!authHeader || authHeader !== 'Bearer secure-token') {
         return next(new AppError('Unauthorized: Please provide a valid authorization token', 401));
     }
-
     next();
 };
